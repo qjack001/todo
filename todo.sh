@@ -8,7 +8,7 @@
 ####  This code is licensed under the MIT license
 
 PROGRAM="todo"
-VERSION="0.1"
+VERSION="0.2"
 SOURCE_URL="https://raw.githubusercontent.com/qjack001/todo/main/todo.sh"
 
 
@@ -28,6 +28,7 @@ function handle_input
 	elif input "$1" "shortform" "short";   then show_short
 	elif input "$1" "version" "v";         then print_version
 	elif input "$1" "update" "upgrade";    then update
+	elif input "$1" "install";             then install
 	else show_help
 	fi
 }
@@ -40,12 +41,12 @@ function show_help
 	print_hr
 	echo "  ${PROGRAM} v${VERSION}  --  Help"
 	print_hr
-	echo "\n  ${PROGRAM} [command] \t description\n"
-	echo "  did \t\t See all completed todos"
-	echo "  short \t\t See list of command short-forms"
-	echo "  update \t\t Update to the latest version"
-	echo "  version \t\t Print the version"
-	echo "\n"
+	printf "\n  ${PROGRAM} [command] \t description \n\n"
+	printf "  did     \t\t See all completed todos \n"
+	printf "  short   \t\t See list of command short-forms \n"
+	printf "  update  \t\t Update to the latest version \n"
+	printf "  version \t\t Print the version \n"
+	printf "\n\n"
 }
 
 ####  Prints the short-form versions of the availible commands.
@@ -55,9 +56,9 @@ function show_short
 	print_hr
 	echo "  ${PROGRAM} v${VERSION}  --  Short-Form Commands"
 	print_hr
-	echo "\n  [command] \t\t [short-form]\n"
-	echo "  version \t\t v"
-	echo "\n"
+	printf "\n  [command] \t\t [short-form] \n\n"
+	printf "  version \t\t v \n"
+	printf "\n\n"
 }
 
 ####  Sets the global LIST_PATH variable to the location of the TODO.md 
@@ -68,10 +69,10 @@ function get_list_path
 		LIST_PATH="TODO.md"
 	else
 		echo "No TODO.md found in working directory, using global TODO.md instead."
-		echo "Run 'todo create' to add a list to this folder.\n"
+		printf "Run 'todo create' to add a list to this folder. \n\n"
 		cd ~
 		touch "TODO.md"
-		LIST_PATH="~/TODO.md"
+		LIST_PATH="TODO.md"
 	fi
 }
 
@@ -151,7 +152,7 @@ function list_todos
 				create_item $index
 				index=$(($index+1))
 			done
-			echo "\n"
+			printf "\n\n"
 			write_to_file # save
 			break
 		elif [ $selected = $((${#options[@]} - 2)) ]; then
@@ -360,7 +361,7 @@ function update
 	read -p "(y/n):  " -r
 	if   [[ $REPLY =~ ^[Yy]$ ]]; then install
 	elif [[ $REPLY =~ ^[Nn]$ ]]; then echo "Ok, update is downloaded but not installed."
-	else echo "Input '${REPLY}' not recognized. Update is downloaded but will not be installed. Run '${PROGRAM} install' to finish installing."
+	else echo "Input '${REPLY}' not recognized. Update is downloaded but will not be installed. Run 'sh ${PROGRAM}.sh install' to finish installing."
 	fi
 }
 
@@ -368,7 +369,7 @@ function update
 function install
 {
 	echo "Installing at /usr/local/bin/${PROGRAM} ..."
-	mv -f "${PROGRAM}.sh" "/usr/local/bin/${PROGRAM}"
+	cp -f "${PROGRAM}.sh" "/usr/local/bin/${PROGRAM}"
 	chmod +x "/usr/local/bin/${PROGRAM}"
 	echo "Installation complete. Try running '${PROGRAM} version'"
 }

@@ -6,5 +6,7 @@
 - [ ] Add 'next' command (gives you next thing to do)
 - [ ] Add syntax-highlighting (@time, (date), !!! urgency)
 - [ ] Add 'create' to create local TODO.md file
+- [ ] Add edit option
+- [ ] Add list option (skip interactivity)
 
 
