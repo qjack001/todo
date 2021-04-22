@@ -351,13 +351,13 @@ function update
 	## curls source with current date added (to avoid old cached versions)
 	HTTP_CODE=$(curl --write-out "%{http_code}" -H 'Cache-Control: no-cache' "${SOURCE_URL}?$(date +%s)" -o "${PROGRAM}.sh")
 	if [[ ${HTTP_CODE} -lt 200 || ${HTTP_CODE} -gt 299 ]]; then 
-		echo "\nDownload failed. Response code = ${HTTP_CODE}"
+		printf "\nDownload failed. Response code = ${HTTP_CODE}\n"
 		exit 1
     fi
-	echo "\nFinished downloading!"
+	printf "\nFinished downloading!\n"
 	echo
 	print_version
-	echo "\nInstall new version in '/usr/local/bin/'?"
+	printf "\nInstall new version in '/usr/local/bin/'?\n"
 	read -p "(y/n):  " -r
 	if   [[ $REPLY =~ ^[Yy]$ ]]; then install
 	elif [[ $REPLY =~ ^[Nn]$ ]]; then echo "Ok, update is downloaded but not installed."
