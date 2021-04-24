@@ -136,7 +136,7 @@ function list_todos
 		fi
 
 		## add other controls
-		options+=("(+) Add new ")
+		options+=("\033[2m(+) Add new \033[0m")
 		options+=("\n[  DONE  ]")
 
 		## print menu of options
@@ -172,7 +172,7 @@ function list_done
 	echo
 
 	for item in "${DONE_ITEMS[@]}"; do
-		printf "[✓] "
+		printf "\033[2m[\033[0m\033[1;32m✓\033[0m\033[2m]\033[0m "
 		get_text "$item"
 	done
 	echo
@@ -213,9 +213,9 @@ function add_item
 function create_item
 {
 	if [[ "${IS_DONE[$1]}" = true ]]; then
-		printf "[✓] ${TODO_ITEMS[$index]} \n"
+		printf "\033[2m[\033[0m\033[1;32m✓\033[0m\033[2m] ${TODO_ITEMS[$index]}\033[0m \n"
 	else
-		printf "[ ] ${TODO_ITEMS[$index]} \n"
+		printf "\033[2m[ ]\033[0m ${TODO_ITEMS[$index]} \n"
 	fi
 }
 
@@ -247,6 +247,13 @@ function write_to_file
 	echo >> "$LIST_PATH" # trailing newline
 }
 
+####  Removes color codes from inputted string. Add new codes as you 
+####  use them to: `(1;32|0|2)`.
+function remove_colors
+{
+	echo "$1" | sed -E "s/[[:cntrl:]]\[(1;32|0|2)m//g"
+}
+
 ####  Print interactable menu of items. Navigatable with the arrow
 ####  keys, press <enter> or <space> to select.
 ####
@@ -269,7 +276,7 @@ function menu
 
 			if [ "$index" = "$selected" ]; then 
 				##  invert if selected
-				printf "\033[7m${item}\033[0m\n"
+				printf "\033[7m$(remove_colors "$item")\033[0m\n"
 			else
 				printf "${item}\n"
 			fi
