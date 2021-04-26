@@ -8,7 +8,7 @@
 ####  This code is licensed under the MIT license
 
 PROGRAM="todo"
-VERSION="0.2"
+VERSION="0.3"
 SOURCE_URL="https://raw.githubusercontent.com/qjack001/todo/main/todo.sh"
 
 
@@ -146,18 +146,21 @@ function list_todos
 		## handle input
 		if [ $selected = $((${#options[@]} - 1)) ]; then
 			## print all items and exit
-			clear
+			echo
 			index=0
 			for item in "${TODO_ITEMS[@]}"; do
 				create_item $index
 				index=$(($index+1))
 			done
-			printf "\n\n"
+			printf "\033[2m(+) Add new \033[0m\n"
+			printf "\033[2K\n"
+			printf "\033[2K\n"
 			write_to_file # save
 			break
 		elif [ $selected = $((${#options[@]} - 2)) ]; then
 			print_add_screen
 			selected=$(($selected+1))
+			clear
 		else
 			toggle $selected
 		fi
@@ -191,12 +194,13 @@ function toggle
 ####  Prints the prompt to add a new todo item.
 function print_add_screen
 {
-	clear
+	echo
 	index=0
 	for item in "${TODO_ITEMS[@]}"; do
 		create_item $index
 		index=$(($index+1))
 	done
+	printf "\033[2K"
 	read -p ">>> " -r
 	add_item "$REPLY"
 }
@@ -254,6 +258,44 @@ function remove_colors
 	echo "$1" | sed -E "s/[[:cntrl:]]\[(1;32|0|2)m//g"
 }
 
+
+####  Returns current cursor position (row), by printing it (so you
+####  can capture it with `var=$(get_pos)`. Can be used in conjunction
+####  with `clear_to` to "soft clear" back to the current position.
+####
+####  NOTE: this can get messed up if you're printing more rows than are
+####  currently availible, pushing the position up. Can be remedied with
+####  something like:
+####  ```
+####  	start_pos=$(get_pos)  # get position
+####  	lines_remaining=$(($(tput lines) - $start_pos))
+####  	##  if we're printing each argument on a newline, the total lines
+####  	##  printed will be the number of arguments (plus all the newlines
+####  	##  inside of them). Get the number of lines:
+####  	newlines_found=$(echo "$@" | wc -l)
+####  	total_lines=$(($# + $newlines_found))
+####  	if [ $(($(tput lines) - $start_pos)) -lt $total_lines ]; then
+####  		start_pos=$(($(tput lines) - $total_lines))
+####  	fi
+####  ```
+function get_pos
+{
+	exec < /dev/tty
+	oldstty=$(stty -g)
+	stty raw -echo min 0
+	echo "\033[6n" > /dev/tty
+	IFS=';' read -r -d R -a pos
+	stty $oldstty
+	echo $((${pos[0]:2} - 1))
+}
+
+####  Clears console to the inputted line number. Use in conjunction
+####  with `get_pos`.
+function clear_to
+{
+	tput cup $1 0
+}
+
 ####  Print interactable menu of items. Navigatable with the arrow
 ####  keys, press <enter> or <space> to select.
 ####
@@ -262,13 +304,22 @@ function remove_colors
 ####  Returning: exit code representing the user's selection
 function menu
 {
+	start_pos=$(get_pos)
+	
+	##  if not enough lines remain, output will push up cursor
+	##  preform more complex cursor save/return
+	lines_remaining=$(($(tput lines) - $start_pos))
+	if [ $(($(tput lines) - $start_pos)) -lt $(($# + 3)) ]; then
+		newlines=$(echo "$@" | wc -l)
+		list_item_total=$(($# + $newlines))
+		start_pos=$(($(tput lines) - $list_item_total))
+	fi
+	
 	selected="$1"
 	length=$(($# - 2))
 	shift
 	
 	while true; do
-		
-		clear
 		index=0
 
 		##  print all items
@@ -292,6 +343,7 @@ function menu
 				read -sn1 typ
 			elif [ "$esc" == "" ]; then
 				##  enter
+				clear_to $start_pos
 				return $selected
 			fi
 			if [ "$esc$bra$typ" == $'\033'[A ]; then
@@ -312,6 +364,9 @@ function menu
 				break
 			fi
 		done
+
+		clear_to $start_pos
+		echo
 	done
 }
 
