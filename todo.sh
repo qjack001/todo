@@ -393,12 +393,12 @@ function print_version
 }
 
 ####  Updates program to newest version, pulling the current code directly
-####  from the source_url (at the top of the file).
+####  from the SOURCE_URL (at the top of the file).
 function update
 {
 	echo "Downloading newest version..."
 	## curls source with current date added (to avoid old cached versions)
-	HTTP_CODE=$(curl --write-out "%{http_code}" -H 'Cache-Control: no-cache' "${source_url}?$(date +%s)" -o "${PROGRAM}-temp.sh")
+	HTTP_CODE=$(curl --write-out "%{http_code}" -H 'Cache-Control: no-cache' "${SOURCE_URL}?$(date +%s)" -o "${PROGRAM}-temp.sh")
 
 	if [[ ${HTTP_CODE} -lt 200 || ${HTTP_CODE} -gt 299 ]]; then 
 		printf "\nDownload failed. Response code = ${HTTP_CODE}\n"
