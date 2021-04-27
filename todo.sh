@@ -8,7 +8,7 @@
 ####  This code is licensed under the MIT license
 
 PROGRAM="todo"
-VERSION="0.3"
+VERSION="0.4"
 SOURCE_URL="https://raw.githubusercontent.com/qjack001/todo/main/todo.sh"
 
 
@@ -146,7 +146,6 @@ function list_todos
 		## handle input
 		if [ $selected = $((${#options[@]} - 1)) ]; then
 			## print all items and exit
-			echo
 			index=0
 			for item in "${TODO_ITEMS[@]}"; do
 				create_item $index
@@ -158,9 +157,11 @@ function list_todos
 			write_to_file # save
 			break
 		elif [ $selected = $((${#options[@]} - 2)) ]; then
+			clear
 			print_add_screen
 			selected=$(($selected+1))
 			clear
+			printf "\n\n\n"
 		else
 			toggle $selected
 		fi
@@ -194,7 +195,7 @@ function toggle
 ####  Prints the prompt to add a new todo item.
 function print_add_screen
 {
-	echo
+	printf "\n\n\n"
 	index=0
 	for item in "${TODO_ITEMS[@]}"; do
 		create_item $index
@@ -264,29 +265,16 @@ function remove_colors
 ####  with `clear_to` to "soft clear" back to the current position.
 ####
 ####  NOTE: this can get messed up if you're printing more rows than are
-####  currently availible, pushing the position up. Can be remedied with
-####  something like:
-####  ```
-####  	start_pos=$(get_pos)  # get position
-####  	lines_remaining=$(($(tput lines) - $start_pos))
-####  	##  if we're printing each argument on a newline, the total lines
-####  	##  printed will be the number of arguments (plus all the newlines
-####  	##  inside of them). Get the number of lines:
-####  	newlines_found=$(echo "$@" | wc -l)
-####  	total_lines=$(($# + $newlines_found))
-####  	if [ $(($(tput lines) - $start_pos)) -lt $total_lines ]; then
-####  		start_pos=$(($(tput lines) - $total_lines))
-####  	fi
-####  ```
+####  currently availible, pushing the position up.
 function get_pos
 {
 	exec < /dev/tty
 	oldstty=$(stty -g)
 	stty raw -echo min 0
-	echo "\033[6n" > /dev/tty
+	printf "\033[6n" > /dev/tty
 	IFS=';' read -r -d R -a pos
 	stty $oldstty
-	echo $((${pos[0]:2} - 1))
+	echo $((${pos[0]:2} - 2))
 }
 
 ####  Clears console to the inputted line number. Use in conjunction
@@ -307,12 +295,10 @@ function menu
 	start_pos=$(get_pos)
 	
 	##  if not enough lines remain, output will push up cursor
-	##  preform more complex cursor save/return
-	lines_remaining=$(($(tput lines) - $start_pos))
 	if [ $(($(tput lines) - $start_pos)) -lt $(($# + 3)) ]; then
-		newlines=$(echo "$@" | wc -l)
-		list_item_total=$(($# + $newlines))
-		start_pos=$(($(tput lines) - $list_item_total))
+		clear
+		printf "\n\n"
+		start_pos="1"
 	fi
 	
 	selected="$1"
@@ -344,6 +330,7 @@ function menu
 			elif [ "$esc" == "" ]; then
 				##  enter
 				clear_to $start_pos
+				echo
 				return $selected
 			fi
 			if [ "$esc$bra$typ" == $'\033'[A ]; then
@@ -406,32 +393,39 @@ function print_version
 }
 
 ####  Updates program to newest version, pulling the current code directly
-####  from the SOURCE_URL (at the top of the file).
+####  from the source_url (at the top of the file).
 function update
 {
 	echo "Downloading newest version..."
 	## curls source with current date added (to avoid old cached versions)
-	HTTP_CODE=$(curl --write-out "%{http_code}" -H 'Cache-Control: no-cache' "${SOURCE_URL}?$(date +%s)" -o "${PROGRAM}.sh")
+	HTTP_CODE=$(curl --write-out "%{http_code}" -H 'Cache-Control: no-cache' "${source_url}?$(date +%s)" -o "${PROGRAM}-temp.sh")
+
 	if [[ ${HTTP_CODE} -lt 200 || ${HTTP_CODE} -gt 299 ]]; then 
 		printf "\nDownload failed. Response code = ${HTTP_CODE}\n"
+		rm -f "${PROGRAM}-temp.sh"
 		exit 1
     fi
+
+	mv -f "${PROGRAM}-temp.sh" "${PROGRAM}.sh"
+	chmod +x "${PROGRAM}.sh"
 	printf "\nFinished downloading!\n"
 	echo
-	print_version
+	printf "${PROGRAM} v${VERSION} => "
+	sh "${PROGRAM}.sh" version
 	printf "\nInstall new version in '/usr/local/bin/'?\n"
 	read -p "(y/n):  " -r
 	if   [[ $REPLY =~ ^[Yy]$ ]]; then install
 	elif [[ $REPLY =~ ^[Nn]$ ]]; then echo "Ok, update is downloaded but not installed."
-	else echo "Input '${REPLY}' not recognized. Update is downloaded but will not be installed. Run 'sh ${PROGRAM}.sh install' to finish installing."
+	else echo "Input '${REPLY}' not recognized. Update is downloaded but will not be installed. Run '${PROGRAM} install' to finish installing."
 	fi
 }
 
 ####  Installs the script as an executable in /usr/local/bin/
+####  TODO: make compatible w/ linux, etc
 function install
 {
 	echo "Installing at /usr/local/bin/${PROGRAM} ..."
-	cp -f "${PROGRAM}.sh" "/usr/local/bin/${PROGRAM}"
+	mv -f "${PROGRAM}.sh" "/usr/local/bin/${PROGRAM}"
 	chmod +x "/usr/local/bin/${PROGRAM}"
 	echo "Installation complete. Try running '${PROGRAM} version'"
 }
